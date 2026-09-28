@@ -30,7 +30,10 @@ l'Éducation nationale.
 
 Pour se connecter, vous scannez (ou collez) le QR code généré depuis votre
 espace Pronote et saisissez le code PIN choisi. L'application reçoit alors un
-jeton de connexion de Pronote.
+jeton de connexion de Pronote. À chaque connexion, elle transmet au serveur
+Pronote de l'établissement, et à lui seul, l'identifiant du compte, ce jeton
+et un identifiant d'installation aléatoire créé lors du scan (comme le fait
+l'application officielle).
 
 - Ce jeton est **chiffré** et conservé uniquement sur votre téléphone (clé de
   chiffrement dans le Keystore Android, qui ne peut pas en sortir).
