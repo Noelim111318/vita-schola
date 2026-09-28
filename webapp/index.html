@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="fr" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Vita Schola</title>
+  <meta name="description" content="Notes, devoirs, emploi du temps d'un coup d'œil, et des quiz pour réviser.">
+  <meta name="app-version" content="v0.63.3">
+  <meta name="color-scheme" content="dark light">
+  <script>
+    (function () {
+      try {
+        var pref = JSON.parse(localStorage.getItem('notes:theme'));
+        var light = pref === 'light' || (pref === 'auto' && window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches);
+        document.documentElement.setAttribute('data-theme', light ? 'light' : 'dark');
+      } catch (e) { document.documentElement.setAttribute('data-theme', 'dark'); }
+    })();
+  </script>
+  <meta name="theme-color" content="#101827">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Vita Schola">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="favicon.ico" sizes="any">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+
+<a class="skip-link" href="#main">Aller au contenu</a>
+
+<main class="container" id="main">
+  <div class="install-row" id="install-row" hidden>
+    <button class="install-btn" id="install-btn" type="button" aria-label="Installer l'application">📲 Installer l'appli</button>
+    <button class="install-dismiss" id="install-dismiss" type="button">Masquer</button>
+    <p class="install-hint" id="install-hint" role="status" hidden></p>
+  </div>
+
+  <div class="header">
+    <div class="version-badge" id="app-version">v0.63.3</div>
+    <h1>Vita Schola</h1>
+    <p class="header-motto" lang="la">Non scholae sed vitae discimus</p>
+  </div>
+
+  <div class="screen active" id="screen-login">
+    <button class="btn btn--ghost" id="login-back-btn" type="button" hidden><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>Retour</button>
+    <div class="panel">
+      <h2>Connexion</h2>
+      <p class="hint">
+        Depuis Pronote (navigateur, pas l'appli) : <b>Mon compte → Sécurité → Générer un QR code</b>.
+        Choisis un code PIN, puis scanne le QR avec la caméra (ou colle son contenu si tu l'as
+        déjà en texte).
+      </p>
+
+      <button class="btn btn--accent" id="scan-qr-btn" type="button">📷 Scanner le QR avec la caméra</button>
+
+      <label for="qr-input">Contenu du QR code</label>
+      <textarea id="qr-input" rows="4" placeholder='{"jeton":"…","login":"…","url":"https://…/pronote/mobile.eleve.html?…"}'></textarea>
+
+      <label for="pin-input">Code PIN (celui choisi lors de la génération du QR)</label>
+      <input id="pin-input" type="text" inputmode="numeric" autocomplete="off" maxlength="4" placeholder="1234">
+
+      <button class="btn btn--primary" id="login-btn" type="button">🔑 Se connecter</button>
+      <p class="form-status" id="login-status" role="status" aria-live="polite"></p>
+
+      <p class="hint demo-hint">Pas encore de QR sous la main ? Teste l'interface avec des données fictives (aucune connexion à Pronote).</p>
+      <button class="btn btn--ghost" id="demo-btn" type="button">🧪 Mode démonstration</button>
+    </div>
+  </div>
+
+  <div class="screen" id="screen-child">
+    <button class="btn btn--ghost" id="child-back-btn" type="button" hidden><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>Retour</button>
+    <div class="panel">
+      <h2>Choisir un enfant</h2>
+      <p class="hint">Un enfant par établissement (chacun avec son propre QR).</p>
+    </div>
+    <div id="child-list" class="subjects-list"></div>
+    <button class="btn btn--ghost" id="child-exit-demo-btn" type="button" hidden>Quitter la démo</button>
+  </div>
+
+  <div class="screen" id="screen-home">
+    <div class="grades-head">
+      <h1 class="home-title">Vita Schola</h1>
+      <button class="btn btn--ghost btn--small" id="home-child-btn" type="button" hidden></button>
+      <span class="grades-head__spacer"></span>
+      <div class="grades-head__icons">
+        <button class="btn btn--ghost btn--icon" id="home-refresh-btn" type="button" title="Actualiser" aria-label="Actualiser">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36"></path><polyline points="21 3 21 9 15 9"></polyline></svg>
+      </button>
+        <button class="btn btn--ghost btn--icon" id="home-logout-btn" type="button" title="Se déconnecter" aria-label="Se déconnecter">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+      </button>
+        <button class="btn btn--ghost btn--icon" id="home-about-btn" type="button" title="À propos" aria-label="À propos">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+      </button>
+      </div>
+    </div>
+
+    <div class="view-bar" id="view-bar">
+      <div class="view-toggle" role="group" aria-label="Type d'affichage">
+        <button class="view-toggle__btn" id="view-full-btn" type="button" aria-pressed="true">Complète</button>
+        <button class="view-toggle__btn" id="view-custom-btn" type="button" aria-pressed="false">Personnalisée</button>
+      </div>
+      <span class="grades-head__spacer"></span>
+      <button class="section-toggle-hidden" id="view-customize-btn" type="button">Personnaliser</button>
+    </div>
+
+    <div class="demo-banner" id="demo-banner" hidden>
+      <span>🧪 Démo — données fictives</span>
+      <button class="btn btn--ghost btn--small" id="demo-exit-btn" type="button">Quitter la démo</button>
+    </div>
+
+    <p class="form-status" id="home-status" role="status" aria-live="polite"></p>
+
+    <section class="resume-section" id="section-daybounds" hidden>
+      <div class="section-header">
+        <h2 class="section-title" id="daybounds-title">🏫 Journée</h2>
+        <button class="section-toggle-hidden" id="daybounds-day-toggle" type="button" hidden></button>
+      </div>
+      <div id="daybounds-list" class="mini-list"></div>
+    </section>
+
+    <section class="resume-section" id="section-notebook" hidden>
+      <div class="section-header">
+        <h2 class="section-title">🗒️ Vie scolaire</h2>
+        <button class="section-toggle-hidden" id="notebook-toggle-hidden" type="button"></button>
+      </div>
+      <div id="notebook-list" class="mini-list"></div>
+    </section>
+
+    <section class="resume-section" id="section-tests" hidden>
+      <h2 class="section-title">📝 Prochain DS</h2>
+      <div id="tests-list" class="mini-list"></div>
+    </section>
+
+    <section class="resume-section" id="section-homework" hidden>
+      <h2 class="section-title">📚 Devoirs non faits</h2>
+      <div id="homework-list" class="mini-list"></div>
+    </section>
+
+    <section class="resume-section" id="section-longterm" hidden>
+      <h2 class="section-title">🔭 Devoirs à anticiper</h2>
+      <div id="longterm-list" class="mini-list"></div>
+    </section>
+
+    <section class="resume-section" id="section-revise" hidden>
+      <div class="section-header">
+        <h2 class="section-title">🧠 Réviser</h2>
+        <button class="section-toggle-hidden" id="revise-settings-btn" type="button">Réglages IA</button>
+      </div>
+      <div id="revise-list" class="mini-list"></div>
+    </section>
+
+    <section class="resume-section" id="section-timetable" hidden>
+      <div class="section-header">
+        <h2 class="section-title" id="timetable-title">🕒 Emploi du temps</h2>
+        <button class="section-toggle-hidden" id="timetable-day-toggle" type="button" hidden></button>
+      </div>
+      <div id="timetable-list" class="mini-list"></div>
+    </section>
+
+    <section class="resume-section" id="section-recent-grades" hidden>
+      <h2 class="section-title">🆕 Dernières notes</h2>
+      <div id="recent-grades-list" class="mini-list"></div>
+    </section>
+
+    <section class="resume-section" id="section-subjects" hidden>
+      <h2 class="section-title">📊 Moyennes par matière</h2>
+      <div id="home-subjects-list" class="subjects-list"></div>
+    </section>
+
+    <section class="resume-section" id="section-overall" hidden>
+      <h2 class="section-title">🎯 Moyennes générales</h2>
+      <div class="mini-list" id="home-overall-list"></div>
+    </section>
+
+    <section class="resume-section" id="section-menu" hidden>
+      <div class="section-header">
+        <h2 class="section-title" id="menu-title">🍽️ Menu</h2>
+        <button class="section-toggle-hidden" id="menu-day-toggle" type="button" hidden></button>
+      </div>
+      <div id="menu-list" class="mini-list"></div>
+    </section>
+
+    <section class="resume-section" id="section-agenda" hidden>
+      <h2 class="section-title">📅 Agenda</h2>
+      <div id="agenda-list" class="mini-list"></div>
+    </section>
+  </div>
+
+  <div class="screen" id="screen-subject">
+    <button class="btn btn--ghost" id="subject-back-btn" type="button"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>Retour</button>
+    <div class="panel">
+      <h2 id="subject-title">Matière</h2>
+      <div class="overall-row">
+        <div>
+          <div class="overall-label">Moyenne élève</div>
+          <div class="overall-value" id="subject-average">—</div>
+        </div>
+        <div>
+          <div class="overall-label">Moyenne classe</div>
+          <div class="overall-value overall-value--dim" id="subject-class-average">—</div>
+        </div>
+      </div>
+      <p class="hint" id="subject-estimate-hint" hidden></p>
+    </div>
+
+    <h3 class="section-title">Évolution</h3>
+    <div id="subject-evolution" class="evolution-chart"></div>
+
+    <div id="subject-notes-block">
+      <h3 class="section-title">Notes</h3>
+      <div id="subject-grades" class="grade-table"></div>
+    </div>
+
+    <div id="subject-sim-block">
+      <h3 class="section-title">Simulateur</h3>
+      <p class="hint" id="sim-hint">
+        Ajoute une note hypothétique pour voir son effet sur la moyenne de la matière.
+        Calcul maison (moyenne pondérée par coefficient, ramenée sur 20) : il peut différer
+        du calcul officiel de l'établissement (groupes, notes non significatives, arrondis…).
+      </p>
+      <div class="sim-form">
+        <label class="sim-field" id="sim-subject-field" hidden><span class="sim-field__label">Matière</span><select id="sim-subject" aria-label="Matière"></select></label>
+        <label class="sim-field"><span class="sim-field__label">Note</span><input id="sim-note" type="number" step="0.5" min="0" placeholder="ex. 14" aria-label="Note simulée"></label>
+        <label class="sim-field"><span class="sim-field__label">Barème</span><input id="sim-bareme" type="number" step="0.5" min="1" value="20" aria-label="Barème"></label>
+        <label class="sim-field"><span class="sim-field__label">Coefficient</span><input id="sim-coef" type="number" step="0.5" min="0.5" value="1" aria-label="Coefficient"></label>
+        <button class="btn btn--primary" id="sim-add-btn" type="button">+ Ajouter</button>
+      </div>
+      <div id="sim-list" class="sim-list"></div>
+      <div class="panel" id="sim-result-panel" hidden>
+        <div class="overall-label" id="sim-result-label">Moyenne simulée de la matière</div>
+        <div class="overall-value" id="sim-result">—</div>
+        <div id="sim-overall-block">
+          <div class="overall-label" style="margin-top:10px">Moyenne générale simulée</div>
+          <div class="overall-value" id="sim-overall-result" style="font-size:1.3rem">—</div>
+        </div>
+        <button class="btn btn--ghost" id="sim-reset-btn" type="button">Réinitialiser la simulation</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="screen" id="screen-revise">
+    <button class="btn btn--ghost" id="revise-back-btn" type="button"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>Retour</button>
+    <div class="panel" id="revise-setup">
+      <h2 id="revise-title">Réviser</h2>
+      <p class="hint">Choisis les cours sur lesquels t'interroger. Le contenu des fichiers joints est lu sur ton téléphone ; seul le texte est envoyé à l'IA.</p>
+      <div id="revise-sources" class="revise-sources"></div>
+      <label for="revise-level">Niveau de l'élève</label>
+      <select id="revise-level">
+        <option value="">— choisir —</option>
+        <option>6ème</option><option>5ème</option><option>4ème</option><option>3ème</option>
+        <option>2nde</option><option>1re</option><option>Terminale</option>
+      </select>
+      <p class="hint">Utilisé quand le professeur n'indique que des titres : le quiz suit alors le programme du niveau. Seul ce niveau est envoyé à l'IA.</p>
+      <p class="hint" id="revise-summary"></p>
+      <button class="btn btn--primary" id="revise-go-btn" type="button">Générer un quiz</button>
+      <button class="btn btn--ghost" id="revise-resume-btn" type="button" hidden></button>
+      <p class="form-status" id="revise-status" role="status" aria-live="polite"></p>
+    </div>
+    <div class="panel" id="revise-progress" hidden>
+      <h2>Préparation du quiz…</h2>
+      <p class="hint" id="revise-progress-text" role="status" aria-live="polite"></p>
+      <p class="hint">Tu peux quitter cet écran : une bulle t'avertira quand le quiz sera prêt.</p>
+      <button class="btn btn--ghost" id="revise-cancel-btn" type="button">Annuler</button>
+    </div>
+    <div class="panel" id="revise-quiz" hidden>
+      <div id="quiz-play">
+        <p class="quiz-progress" id="quiz-progress"></p>
+        <p class="quiz-mode-note" id="quiz-mode-note" hidden></p>
+        <h2 class="quiz-question" id="quiz-question"></h2>
+        <div class="quiz-choices" id="quiz-choices"></div>
+        <div class="quiz-feedback" id="quiz-feedback" hidden>
+          <p class="quiz-verdict" id="quiz-verdict"></p>
+          <p id="quiz-explain"></p>
+          <p class="quiz-source" id="quiz-source"></p>
+        </div>
+        <button class="btn btn--primary" id="quiz-next-btn" type="button" hidden>Question suivante</button>
+      </div>
+      <div id="quiz-end" hidden>
+        <h2>Résultat</h2>
+        <p class="quiz-score" id="quiz-score"></p>
+        <div id="quiz-missed"></div>
+        <p class="hint" id="quiz-info"></p>
+        <ul class="quiz-files" id="quiz-files" hidden></ul>
+        <details class="quiz-source-view" id="quiz-source-view" hidden>
+          <summary>Voir le texte utilisé pour ce quiz</summary>
+          <pre id="quiz-source-text"></pre>
+        </details>
+        <button class="btn btn--primary" id="quiz-replay-btn" type="button">Rejouer ce quiz</button>
+        <button class="btn btn--ghost" id="quiz-new-btn" type="button">Nouveau quiz (autres questions)</button>
+        <button class="btn btn--ghost" id="quiz-back-btn" type="button">Choisir d'autres cours</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="screen" id="screen-ai">
+    <button class="btn btn--ghost" id="ai-back-btn" type="button"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>Retour</button>
+    <div class="panel">
+      <h2>Révision par IA</h2>
+      <p class="hint">Génère des quiz à partir des cours et de leurs fichiers joints. Tu utilises ta propre clé gratuite : elle reste sur cet appareil et rien ne passe par un serveur de l'appli.</p>
+      <label for="ai-provider">Fournisseur</label>
+      <select id="ai-provider">
+        <option value="groq">Groq (recommandé)</option>
+        <option value="mistral">Mistral</option>
+      </select>
+      <p class="hint" id="ai-steps"></p>
+      <label for="ai-key">Clé API</label>
+      <input id="ai-key" type="password" autocomplete="off" autocapitalize="off" spellcheck="false">
+      <label class="ai-consent"><input type="checkbox" id="ai-consent"><span id="ai-consent-text"></span></label>
+      <button class="btn btn--primary" id="ai-save-btn" type="button">Enregistrer et tester</button>
+      <button class="btn btn--ghost" id="ai-remove-btn" type="button" hidden>Supprimer la clé</button>
+      <p class="form-status" id="ai-status" role="status" aria-live="polite"></p>
+    </div>
+  </div>
+
+  <div class="screen" id="screen-about">
+    <button class="btn btn--ghost" id="about-back-btn" type="button"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>Retour</button>
+    <div class="panel">
+      <h2>À propos</h2>
+      <p class="hint">
+        Vita Schola ne remplace pas Pronote : c'est un tableau de bord, pour voir
+        d'un coup d'œil ce qui compte (cours du jour, devoirs, dernières notes,
+        cantine) — et, en plus, réviser grâce à des quiz tirés des cours. Pour tout
+        le reste (messagerie, bulletins…), l'application officielle Pronote reste la
+        référence.
+      </p>
+      <p class="hint">
+        Vita Schola v<span id="about-version">0.1.0</span> — moteur pwa-engine.
+        Utilise <code>pawnote-lts</code>, un fork communautaire (non officiel) qui
+        reconstruit le protocole interne de Pronote. Ça peut casser à chaque rentrée le
+        temps d'une mise à jour ; aucune donnée ne transite par un serveur tiers.
+      </p>
+      <p class="hint">
+        <em lang="la">Vita Schola</em>, c'est « la vie scolaire » en latin. Sa devise,
+        <em lang="la">Non scholae sed vitae discimus</em> : « on n'apprend pas pour
+        l'école, mais pour la vie ». Sénèque avait écrit l'inverse pour s'en plaindre
+        (<em lang="la">Non vitae sed scholae discimus</em>, Lettres à Lucilius, 106) ;
+        c'est la version retournée qui est restée.
+      </p>
+      <p class="hint" id="runtime-mode-hint">…</p>
+      <p class="hint" id="secure-status"></p>
+    </div>
+
+    <div class="panel">
+      <h3 class="section-title" style="margin-top:0">Confidentialité et contact</h3>
+      <ul class="hint about-list">
+        <li>Aucun serveur : le développeur ne reçoit aucune de tes données. Pas de publicité ni de traceur.</li>
+        <li>L'appli échange directement avec le serveur Pronote de l'établissement ; le jeton de connexion est chiffré sur le téléphone.</li>
+        <li>Révision par IA (facultative) : le texte des cours choisis part chez le fournisseur que tu as configuré, jamais le nom ni les notes de l'élève.</li>
+      </ul>
+      <p class="hint about-links">
+        <a href="https://github.com/Noelim111318/vita-schola/blob/main/PRIVACY.md" target="_blank" rel="noopener">Politique de confidentialité complète</a><br>
+        Contact : <a href="mailto:vitaschola@gmail.com">vitaschola@gmail.com</a>
+      </p>
+      <p class="hint">Application non officielle, ni éditée ni approuvée par Index Éducation (Pronote).</p>
+    </div>
+
+    <div class="panel">
+      <h3 class="section-title" style="margin-top:0">Licences</h3>
+      <p class="hint about-links">Vita Schola est un logiciel libre (GPL-3.0 ou ultérieure).<br>
+        <a href="https://github.com/Noelim111318/vita-schola" target="_blank" rel="noopener">Code source sur GitHub</a></p>
+      <p class="hint">Elle embarque ces logiciels libres (textes de licence dans les dossiers <code>vendor/</code> de l'appli) :</p>
+      <ul class="licenses">
+        <li><strong>pawnote-lts</strong> (fork communautaire de Pawnote, modifié) — GPL-3.0 ou ultérieure</li>
+        <li><strong>Capacitor</strong> 8 — MIT</li>
+        <li><strong>jsQR</strong> — Apache-2.0</li>
+        <li><strong>PDF.js</strong> 3.11 (Mozilla) — Apache-2.0</li>
+        <li><strong>Tesseract.js</strong> 5 et son cœur WebAssembly — Apache-2.0</li>
+        <li><strong>Données de langue française Tesseract</strong> (tessdata_best, via @tesseract.js-data/fra) — Apache-2.0</li>
+      </ul>
+    </div>
+
+    <div class="panel">
+      <h3 class="section-title" style="margin-top:0">Révision par IA</h3>
+      <p class="hint">Clé API personnelle et fournisseur pour les quiz de révision.</p>
+      <button class="btn btn--ghost" id="about-ai-btn" type="button">Réglages de la révision IA</button>
+    </div>
+
+    <div class="panel">
+      <h3 class="section-title" style="margin-top:0">Journal (debug)</h3>
+      <p class="hint">
+        Aucune donnée personnelle dedans (pas de notes) : juste les grandes étapes de
+        connexion/réseau, pour aider à diagnostiquer un souci.
+      </p>
+      <button class="btn btn--ghost" id="copy-logs-btn" type="button">📋 Copier les logs</button>
+      <p class="form-status" id="logs-status" role="status" aria-live="polite"></p>
+      <textarea id="logs-view" readonly rows="8" aria-label="Journal de débogage"></textarea>
+    </div>
+  </div>
+</main>
+
+<div class="camera-overlay" id="camera-overlay" hidden>
+  <div class="camera-overlay__viewport">
+    <video id="camera-video" autoplay playsinline muted></video>
+    <div class="camera-overlay__frame" aria-hidden="true"></div>
+  </div>
+  <p class="camera-overlay__hint">Cadre le QR code de Pronote</p>
+  <button class="btn btn--ghost" id="camera-cancel-btn" type="button">Annuler</button>
+</div>
+<canvas id="camera-canvas" hidden></canvas>
+
+<div class="detail-overlay" id="detail-overlay" hidden>
+  <div class="detail-card" id="detail-card" role="dialog" aria-modal="true">
+    <button class="detail-hide-btn" id="detail-hide-btn" type="button" hidden></button>
+    <button class="detail-close" id="detail-close" type="button" aria-label="Fermer">✕</button>
+    <div id="detail-body"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="alert" hidden>
+  <span id="toast-text"></span>
+  <button type="button" id="toast-close" aria-label="Fermer">✕</button>
+</div>
+
+<script src="data.js"></script>
+<script src="engine/engine.js"></script>
+<script src="vendor/pawnote.js"></script>
+<script src="vendor/jsqr.js"></script>
+<script src="app.js"></script>
+
+</body>
+</html>

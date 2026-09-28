@@ -1,0 +1,16 @@
+{
+  "name": "vita-schola",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Enveloppe Capacitor (Android) pour l'app Vita Schola (webapp/) — moyennes Pronote.",
+  "scripts": {
+    "sync": "cap sync android",
+    "open:android": "cap open android",
+    "build:apk": "cd android && ./gradlew assembleDebug"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.5.2",
+    "@capacitor/cli": "^8.5.2",
+    "@capacitor/core": "^8.5.2"
+  }
+}

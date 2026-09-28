@@ -1,0 +1,11 @@
+fra.traineddata — donnees de reconnaissance du francais pour Tesseract.
+
+Origine : modele "4.0.0_best_int" du projet tesseract-ocr (depot tessdata_best,
+https://github.com/tesseract-ocr/tessdata_best), distribue sous licence
+Apache License 2.0 (meme texte de licence que ../LICENSE-tesseract-core.txt).
+
+Obtenu via le paquet npm @tesseract.js-data/fra 1.0.0
+(https://github.com/naptha/tesseract.js), declare sous licence MIT dans son
+package.json (le paquet ne fournit pas de texte de licence). Stocke ici non
+compresse ; contenu identique a l'octet pres au fichier du paquet
+(verifie par tools/verify-vendor.sh).

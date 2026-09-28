@@ -1,0 +1,26 @@
+# Deps npm (tooling Capacitor) — regenerable via `npm install`
+node_modules/
+
+# OS / editeurs
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# android/ a son propre .gitignore (build/, .gradle/, local.properties,
+# app/src/main/assets/public — copie synchronisee de webapp/, etc.)
+
+# Artefacts d'analyse APK temporaires (JADX), jamais commit
+base.apk
+split_config.*.apk
+tools/compare-results*.json
+
+# Police telechargee par tools/make-icons.py (si tu utilises le glyphe texte)
+tools/*.ttf
+tools/__pycache__/
+
+# Cles de signature et bundles (jamais dans le depot)
+*.jks
+*.keystore
+keystore.properties
+release/*.aab
+release/*.apk
